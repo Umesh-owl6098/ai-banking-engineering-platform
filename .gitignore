@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Java / Maven
+**/target/
+*.class
+*.jar
+
+# Environment and secrets
+.env
+.env.*
+!*.env.example
+
+# Logs
+*.log
+
+# Node frontend
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Generated files
+generated-artifacts/
