@@ -39,4 +39,12 @@ public class AiAgentController {
     ) {
         return aiAgentService.getAgentById(agentId);
     }
+
+    @PutMapping("/agents/{agentId}")
+    public AiAgent updateAgent(
+            @PathVariable UUID agentId,
+            @Valid @RequestBody UpdateAiAgentRequest request
+    ) {
+        return aiAgentService.updateAgent(agentId, request);
+    }
 }

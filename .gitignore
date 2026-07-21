@@ -26,3 +26,7 @@ out/
 
 # Generated files
 generated-artifacts/
+.env
+.env.*
+!.env.example
+backend/src/main/resources/application-local.properties
