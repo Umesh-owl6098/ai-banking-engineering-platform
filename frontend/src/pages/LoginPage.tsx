@@ -21,7 +21,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState("supervisor");
-  const [password, setPassword] = useState("Password123!");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -159,6 +159,7 @@ cp .env.example .env
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | No | LLM reports, chat, embeddings |
+| `DEMO_USER_PASSWORD` | Yes (local demo) | Password for seeded demo users; set in `.env` only |
 | `VITE_API_URL` | No | Default `http://localhost:8080/api` |
 | `VITE_PROJECT_ID` | No | Default project UUID for the UI |
 
@@ -182,11 +183,12 @@ Flyway runs automatically on backend startup (migrations V1–V19).
 
 ```bash
 docker compose up -d
+export DEMO_USER_PASSWORD='your-local-demo-password'   # from .env
 cd backend && ./mvnw spring-boot:run
 cd frontend && npm install && npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). Ensure only **one** backend instance uses port 8080.
+Open [http://localhost:5173](http://localhost:5173) (use `localhost`, not `127.0.0.1`, so CORS matches). Ensure only **one** backend instance uses port 8080.
 
 ## Running Tests
 
@@ -208,27 +210,35 @@ cd frontend && npm run build
 
 ## Demo Users
 
-When `auth.demo-users.enabled=true`, seeded usernames are: `admin`, `supervisor`, `fraud.analyst`, `compliance.analyst`, `readonly`. Use your local demo password policy—**do not commit passwords to this repository.**
+When `auth.demo-users.enabled=true`, the backend seeds: `admin`, `supervisor`, `fraud.analyst`, `compliance.analyst`, `readonly`. Set `DEMO_USER_PASSWORD` in your local `.env` file (see `.env.example`). **Do not commit passwords to Git.**
 
 ## Screenshots
 
+Authenticated captures from the running application (1440×900, synthetic demo data). Only `01-login.png` shows the sign-in screen; screenshots `02`–`13` require an active session.
+
 | | |
 |---|---|
-| ![Login](docs/screenshots/01-login.png) | **Login** |
-| ![Dashboard](docs/screenshots/02-dashboard.png) | **Operations Dashboard** |
-| ![Live Transactions](docs/screenshots/03-live-transactions.png) | **Live Transactions** |
-| ![Screening Results](docs/screenshots/04-screening-results.png) | **Suspicious Transactions** |
-| ![Investigations](docs/screenshots/05-investigations.png) | **Investigations** |
-| ![Command Center](docs/screenshots/06-investigation-command-center.png) | **Investigation Command Center** |
-| ![Agent Findings](docs/screenshots/07-agent-findings.png) | **Agent Findings** |
-| ![Explainability](docs/screenshots/08-explainability.png) | **Explainability** |
-| ![AI Report](docs/screenshots/09-ai-report.png) | **Investigation Report** |
-| ![Analyst Queue](docs/screenshots/10-analyst-queue.png) | **Analyst Queue** |
-| ![Notifications](docs/screenshots/11-notifications.png) | **Notification Center** |
-| ![Operations Center](docs/screenshots/12-operations-center.png) | **Operations Center** |
-| ![Analyst Review](docs/screenshots/13-analyst-review.png) | **Analyst Review** |
+| ![Login](docs/screenshots/01-login.png) | **Login** — sign-in screen (username only; password field empty) |
+| ![Dashboard](docs/screenshots/02-dashboard.png) | **Operations Dashboard** — KPIs, live alerts, and investigation workload |
+| ![Live Transactions](docs/screenshots/03-live-transactions.png) | **Live Transactions** — simulation stream and screening status |
+| ![Screening Results](docs/screenshots/04-screening-results.png) | **Suspicious Transactions** — flagged screening outcomes |
+| ![Investigations](docs/screenshots/05-investigations.png) | **Investigations** — case list with statuses and priorities |
+| ![Command Center](docs/screenshots/06-investigation-command-center.png) | **Investigation Command Center** — pipeline timeline and case summary |
+| ![Agent Findings](docs/screenshots/07-agent-findings.png) | **Agent Findings** — Fraud, KYC, AML, and Compliance outputs |
+| ![Explainability](docs/screenshots/08-explainability.png) | **Explainability** — rule-level indicators per agent |
+| ![AI Report](docs/screenshots/09-ai-report.png) | **Investigation Report** — generated report with analyst recommendation |
+| ![Analyst Queue](docs/screenshots/10-analyst-queue.png) | **Analyst Review Queue** — assignment partitions |
+| ![Notifications](docs/screenshots/11-notifications.png) | **Notification Center** — unread alerts and history |
+| ![Operations Center](docs/screenshots/12-operations-center.png) | **Operations Center** — platform health and metrics |
+| ![Analyst Review](docs/screenshots/13-analyst-review.png) | **Human Review** — analyst decision workflow |
 
-Re-capture: `cd scripts && npm install && npx playwright install chromium && node capture-screenshots.mjs`
+Re-capture after UI changes (requires running backend and frontend):
+
+```bash
+export DEMO_USER_PASSWORD='your-local-demo-password'
+cd scripts && npm install && npx playwright install chromium
+node capture-demo-screenshots.mjs
+```
 
 ## Documentation
 

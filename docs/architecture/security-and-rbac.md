@@ -105,7 +105,7 @@ Controllers and services use `CurrentUserService` for notification scoping, anal
 | `COMPLIANCE_ANALYST` | `ROLE_COMPLIANCE_ANALYST` | Compliance case review, claim assigned work |
 | `READ_ONLY` | `ROLE_READ_ONLY` | View-only access to GET endpoints |
 
-Demo users (when `auth.demo-users.enabled=true`): `admin`, `supervisor`, `fraud.analyst`, `compliance.analyst`, `readonly` — password `Password123!`.
+Demo users (when `auth.demo-users.enabled=true`): `admin`, `supervisor`, `fraud.analyst`, `compliance.analyst`, `readonly`. Password is configured via `DEMO_USER_PASSWORD` / `auth.demo-users.password` (local environment only).
 
 ## HTTP Authorization Rules
 
