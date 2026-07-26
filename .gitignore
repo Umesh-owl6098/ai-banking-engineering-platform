@@ -1,8 +1,9 @@
 # macOS
 .DS_Store
 
-# IntelliJ
+# IDE
 .idea/
+.vscode/
 *.iml
 out/
 
@@ -14,9 +15,11 @@ out/
 # Environment and secrets
 .env
 .env.*
-!*.env.example
+!.env.example
+backend/src/main/resources/application-local.properties
 
 # Logs
+logs/
 *.log
 
 # Node frontend
@@ -24,9 +27,18 @@ out/
 **/dist/
 **/.vite/
 
+# Test and coverage artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Temporary screenshot staging
+screenshots-temp/
+scripts/node_modules/
+scripts/package-lock.json
+
 # Generated files
 generated-artifacts/
-.env
-.env.*
-!.env.example
-backend/src/main/resources/application-local.properties
+
+# Local tooling (optional specs)
+.kiro/

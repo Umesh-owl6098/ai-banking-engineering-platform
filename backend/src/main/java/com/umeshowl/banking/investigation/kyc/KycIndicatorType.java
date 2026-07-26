@@ -1,0 +1,14 @@
+package com.umeshowl.banking.investigation.kyc;
+
+public enum KycIndicatorType {
+    KYC_NOT_VERIFIED,
+    MISSING_OCCUPATION,
+    MISSING_SOURCE_OF_FUNDS,
+    PEP_CUSTOMER,
+    HIGH_CUSTOMER_RISK,
+    HIGH_RISK_NATIONALITY,
+    HIGH_RISK_RESIDENCE,
+    NEW_ACCOUNT,
+    INACTIVE_OR_RESTRICTED_ACCOUNT,
+    PROFILE_INCONSISTENCY
+}

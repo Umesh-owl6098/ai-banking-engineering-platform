@@ -23,7 +23,7 @@ export default function SourcePanel({
   }
 
   return (
-    <Box mt={1}>
+    <Box sx={{ mt: 1 }}>
       <Typography
         variant="subtitle2"
         gutterBottom
@@ -77,9 +77,9 @@ export default function SourcePanel({
               </Typography>
 
               <Typography
-                mt={2}
                 variant="caption"
                 color="text.secondary"
+                sx={{ mt: 2 }}
               >
                 Chunk #{source.chunkIndex}
               </Typography>

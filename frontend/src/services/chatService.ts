@@ -1,3 +1,4 @@
+import { API_BASE_URL, getAuthHeaders } from "../api/api";
 import type {
   ChatRequest,
   ChatMessage,
@@ -25,41 +26,31 @@ interface StreamCallbacks {
   onError?: (message: string) => void;
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ??
-  "http://localhost:8080/api";
-
 export async function streamChat(
   request: ChatRequest,
   callbacks: StreamCallbacks,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/chat/stream`,
-    {
-      method: "POST",
-      headers: {
-        Accept: "text/event-stream",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-      signal,
-    },
-  );
+  const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+    method: "POST",
+    headers: getAuthHeaders({
+      Accept: "text/event-stream",
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify(request),
+    signal,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
 
     throw new Error(
-      errorText ||
-        `Chat request failed with status ${response.status}`,
+      errorText || `Chat request failed with status ${response.status}`,
     );
   }
 
   if (!response.body) {
-    throw new Error(
-      "Streaming response body is unavailable",
-    );
+    throw new Error("Streaming response body is unavailable");
   }
 
   const reader = response.body.getReader();
@@ -78,26 +69,19 @@ export async function streamChat(
       stream: true,
     });
 
-    const rawEvents =
-      buffer.split(/\r?\n\r?\n/);
+    const rawEvents = buffer.split(/\r?\n\r?\n/);
 
     buffer = rawEvents.pop() ?? "";
 
     for (const rawEvent of rawEvents) {
-      processSseEvent(
-        rawEvent,
-        callbacks,
-      );
+      processSseEvent(rawEvent, callbacks);
     }
   }
 
   buffer += decoder.decode();
 
   if (buffer.trim()) {
-    processSseEvent(
-      buffer,
-      callbacks,
-    );
+    processSseEvent(buffer, callbacks);
   }
 }
 
@@ -105,119 +89,90 @@ function processSseEvent(
   rawEvent: string,
   callbacks: StreamCallbacks,
 ): void {
-  const lines =
-    rawEvent.split(/\r?\n/);
+  const lines = rawEvent.split(/\r?\n/);
 
   let eventName = "";
   const dataLines: string[] = [];
 
   for (const line of lines) {
     if (line.startsWith("event:")) {
-      eventName = line
-        .slice("event:".length)
-        .trim();
+      eventName = line.slice("event:".length).trim();
     }
 
     if (line.startsWith("data:")) {
-      dataLines.push(
-        line
-          .slice("data:".length)
-          .trim(),
-      );
+      dataLines.push(line.slice("data:".length).trim());
     }
   }
 
-  if (
-    !eventName ||
-    dataLines.length === 0
-  ) {
+  if (!eventName || dataLines.length === 0) {
     return;
   }
 
-  const dataText =
-    dataLines.join("\n");
+  const dataText = dataLines.join("\n");
 
   let data: unknown;
 
   try {
     data = JSON.parse(dataText);
   } catch {
-    throw new Error(
-      `Invalid streaming data received: ${dataText}`,
-    );
+    throw new Error(`Invalid streaming data received: ${dataText}`);
   }
 
   switch (eventName) {
     case "metadata":
-      callbacks.onMetadata?.(
-        data as StreamMetadata,
-      );
+      callbacks.onMetadata?.(data as StreamMetadata);
       break;
 
     case "token": {
-      const tokenData =
-        data as { token?: string };
+      const tokenData = data as { token?: string };
 
       if (tokenData.token) {
-        callbacks.onToken(
-          tokenData.token,
-        );
+        callbacks.onToken(tokenData.token);
       }
 
       break;
     }
 
     case "sources": {
-      const sourcesData =
-        data as {
-          sources?: SourceReference[];
-        };
+      const sourcesData = data as {
+        sources?: SourceReference[];
+      };
 
-      callbacks.onSources?.(
-        sourcesData.sources ?? [],
-      );
+      callbacks.onSources?.(sourcesData.sources ?? []);
 
       break;
     }
 
     case "complete":
-      callbacks.onComplete?.(
-        data as StreamCompletion,
-      );
+      callbacks.onComplete?.(data as StreamCompletion);
       break;
 
     case "error": {
-      const errorData =
-        data as { message?: string };
+      const errorData = data as { message?: string };
 
-      callbacks.onError?.(
-        errorData.message ??
-          "Streaming chat failed",
-      );
+      callbacks.onError?.(errorData.message ?? "Streaming chat failed");
 
       break;
     }
 
     default:
-      console.debug(
-        "Unhandled SSE event:",
-        eventName,
-        data,
-      );
+      console.debug("Unhandled SSE event:", eventName, data);
   }
 }
+
 export async function getConversationMessages(
-     conversationId: string,
-   ): Promise<ChatMessage[]> {
-     const response = await fetch(
-       `${API_BASE_URL}/conversations/${conversationId}/messages`,
-     );
+  conversationId: string,
+): Promise<ChatMessage[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/conversations/${conversationId}/messages`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
 
-     if (!response.ok) {
-       throw new Error(
-         `Unable to load messages (${response.status})`,
-       );
-     }
+  if (!response.ok) {
+    throw new Error(`Unable to load messages (${response.status})`);
+  }
 
-     return response.json();
-   }
+  return response.json();
+}

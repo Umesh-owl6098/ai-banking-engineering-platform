@@ -51,25 +51,31 @@ export default function ConversationSidebar({
 
   return (
     <Paper
-      elevation={2}
+      variant="outlined"
+      square
       sx={{
-        width: 300,
+        width: 260,
+        flexShrink: 0,
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        borderTop: 0,
+        borderBottom: 0,
+        borderLeft: 0,
         borderRadius: 0,
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6">
+      <Box sx={{ p: 1.75 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           Conversations
         </Typography>
 
         <Button
           fullWidth
           variant="contained"
+          size="small"
           startIcon={<AddIcon />}
-          sx={{ mt: 2 }}
+          sx={{ mt: 1.5 }}
           onClick={onNewConversation}
         >
           New Conversation

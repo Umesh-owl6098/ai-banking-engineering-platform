@@ -30,6 +30,15 @@ public class KnowledgeSearchService {
             String query,
             Integer requestedLimit
     ) {
+        return search(projectId, query, requestedLimit, true);
+    }
+
+    public List<KnowledgeSearchResult> search(
+            UUID projectId,
+            String query,
+            Integer requestedLimit,
+            boolean enableHybridSearch
+    ) {
 
         validateQuery(query);
 
@@ -48,6 +57,12 @@ public class KnowledgeSearchService {
                         limit * 2
                 );
 
+        if (!enableHybridSearch) {
+            return vectorResults.stream()
+                    .limit(limit)
+                    .toList();
+        }
+
         List<KnowledgeSearchResult> keywordResults =
                 searchByKeyword(
                         projectId,
@@ -55,28 +70,15 @@ public class KnowledgeSearchService {
                         limit * 2
                 );
 
-        /*
-         * Merge both searches.
-         * Vector results keep priority.
-         */
-
         Map<UUID, KnowledgeSearchResult> merged =
                 new LinkedHashMap<>();
 
         for (KnowledgeSearchResult result : vectorResults) {
-
-            merged.put(
-                    result.chunkId(),
-                    result
-            );
+            merged.put(result.chunkId(), result);
         }
 
         for (KnowledgeSearchResult result : keywordResults) {
-
-            merged.putIfAbsent(
-                    result.chunkId(),
-                    result
-            );
+            merged.putIfAbsent(result.chunkId(), result);
         }
 
         return merged.values()
