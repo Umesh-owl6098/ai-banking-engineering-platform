@@ -1,0 +1,14 @@
+package com.umeshowl.banking.investigation.execution;
+
+public enum InvestigationExecutionEventType {
+    INVESTIGATION_CREATED,
+    SUPERVISOR_STARTED,
+    SUPERVISOR_COMPLETED,
+    AGENT_STARTED,
+    AGENT_COMPLETED,
+    AGENT_FAILED,
+    REPORT_GENERATION_STARTED,
+    REPORT_GENERATED,
+    INVESTIGATION_READY_FOR_REVIEW,
+    EXECUTION_FAILED
+}

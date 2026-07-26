@@ -1,0 +1,14 @@
+package com.umeshowl.banking.investigation.aml;
+
+public enum AmlIndicatorType {
+    STRUCTURING,
+    RAPID_MOVEMENT,
+    LARGE_TRANSACTION,
+    HIGH_RISK_COUNTRY,
+    HIGH_RISK_CUSTOMER,
+    PEP_ACTIVITY,
+    FLAGGED_TRANSACTION,
+    HIGH_TRANSACTION_RISK_SCORE,
+    NEW_ACCOUNT_ACTIVITY,
+    MULTIPLE_HIGH_RISK_INDICATORS
+}
