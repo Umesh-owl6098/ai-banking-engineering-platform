@@ -9,19 +9,23 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@org.springframework.boot.context.properties.EnableConfigurationProperties(
+        CorsProperties.class
+)
 public class CorsConfig {
 
-    static final List<String> LOCAL_DEV_ORIGINS = List.of(
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:5174",
-            "http://127.0.0.1:5174"
-    );
+    private final CorsProperties corsProperties;
+
+    public CorsConfig(CorsProperties corsProperties) {
+        this.corsProperties = corsProperties;
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(LOCAL_DEV_ORIGINS);
+        configuration.setAllowedOrigins(
+                corsProperties.resolveAllowedOrigins()
+        );
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         );
