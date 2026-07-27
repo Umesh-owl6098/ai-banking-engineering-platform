@@ -11,12 +11,14 @@ import StopCircleIcon from "@mui/icons-material/StopCircle";
 
 interface ChatInputProps {
   isStreaming: boolean;
+  disabled?: boolean;
   onSend: (message: string) => Promise<void>;
   onStop: () => void;
 }
 
 export default function ChatInput({
   isStreaming,
+  disabled = false,
   onSend,
   onStop,
 }: ChatInputProps) {
@@ -25,7 +27,7 @@ export default function ChatInput({
   async function handleSend(): Promise<void> {
     const trimmedMessage = message.trim();
 
-    if (!trimmedMessage || isStreaming) {
+    if (!trimmedMessage || isStreaming || disabled) {
       return;
     }
 
@@ -67,7 +69,7 @@ export default function ChatInput({
           maxRows={6}
           placeholder="Ask something about your banking documents..."
           value={message}
-          disabled={isStreaming}
+          disabled={isStreaming || disabled}
           onChange={(event) =>
             setMessage(event.target.value)
           }
@@ -93,7 +95,7 @@ export default function ChatInput({
                 onClick={() => {
                   void handleSend();
                 }}
-                disabled={!message.trim()}
+                disabled={!message.trim() || disabled}
                 size="large"
               >
                 <SendIcon />

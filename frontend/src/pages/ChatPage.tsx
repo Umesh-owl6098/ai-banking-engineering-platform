@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -22,11 +22,12 @@ import {
   getProjectConversations,
   updateConversationTitle,
 } from "../services/conversationService";
+import { INVESTIGATION_PROJECT_ID } from "../services/investigationService";
 import type { Conversation } from "../types/conversation";
 
-const CONVERSATION_ID = "d6a43fe7-d27e-41fd-96c4-cbb497b3732b";
-const PROJECT_ID = "8c0c0dee-dd8e-4419-bef3-a2e93c10a726";
-const AGENT_ID = "c964b4de-f07a-4b61-bb53-18144b06f1fa";
+const CHAT_AGENT_ID =
+  import.meta.env.VITE_AGENT_ID ??
+  "c964b4de-f07a-4b61-bb53-18144b06f1fa";
 
 function createConversationTitle(message: string): string {
   const cleanMessage = message.trim().replace(/\s+/g, " ");
@@ -42,7 +43,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] =
-    useState(CONVERSATION_ID);
+    useState("");
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [conversationError, setConversationError] = useState<string | null>(
     null,
@@ -57,28 +58,49 @@ export default function ChatPage() {
     clearMessages,
   } = useStreamingChat(selectedConversationId);
 
+  const createAndSelectConversation =
+    useCallback(async (): Promise<Conversation | null> => {
+      try {
+        const newConversation = await createConversation({
+          projectId: INVESTIGATION_PROJECT_ID,
+          agentId: CHAT_AGENT_ID,
+          title: "New Banking Conversation",
+        });
+
+        setConversations((currentConversations) => [
+          newConversation,
+          ...currentConversations,
+        ]);
+        setSelectedConversationId(newConversation.id);
+
+        return newConversation;
+      } catch {
+        setConversationError("Unable to create a new conversation.");
+        return null;
+      }
+    }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
-    const loadConversations = async () => {
+    const initializeConversations = async (): Promise<void> => {
       try {
         setIsLoadingConversations(true);
         setConversationError(null);
 
-        const data = await getProjectConversations(PROJECT_ID);
+        const data = await getProjectConversations(
+          INVESTIGATION_PROJECT_ID,
+        );
         setConversations(data);
 
         if (data.length > 0) {
-          const currentConversationExists = data.some(
-            (conversation) => conversation.id === selectedConversationId,
-          );
-
-          if (!currentConversationExists) {
-            setSelectedConversationId(data[0].id);
-          }
+          setSelectedConversationId(data[0].id);
+          return;
         }
+
+        await createAndSelectConversation();
       } catch (loadError) {
         setConversationError(
           loadError instanceof Error
@@ -90,27 +112,12 @@ export default function ChatPage() {
       }
     };
 
-    void loadConversations();
-  }, []);
+    void initializeConversations();
+  }, [createAndSelectConversation]);
 
-  const handleNewConversation = async (): Promise<Conversation | null> => {
-    try {
-      const newConversation = await createConversation({
-        projectId: PROJECT_ID,
-        agentId: AGENT_ID,
-        title: "New Banking Conversation",
-      });
-
-      setConversations((currentConversations) => [
-        newConversation,
-        ...currentConversations,
-      ]);
-      setSelectedConversationId(newConversation.id);
-      return newConversation;
-    } catch {
-      setConversationError("Unable to create a new conversation.");
-      return null;
-    }
+  const handleNewConversation = async (): Promise<void> => {
+    stopStreaming();
+    await createAndSelectConversation();
   };
 
   const handleDeleteConversation = async (
@@ -137,7 +144,7 @@ export default function ChatPage() {
       if (remainingConversations.length > 0) {
         setSelectedConversationId(remainingConversations[0].id);
       } else {
-        await handleNewConversation();
+        await createAndSelectConversation();
       }
     } catch {
       window.alert("Unable to delete the conversation. Please try again.");
@@ -145,6 +152,10 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async (message: string): Promise<void> => {
+    if (!selectedConversationId) {
+      return;
+    }
+
     const selectedConversation = conversations.find(
       (conversation) => conversation.id === selectedConversationId,
     );
@@ -177,6 +188,18 @@ export default function ChatPage() {
     await sendMessage(message);
   };
 
+  const handleSelectConversation = (conversationId: string): void => {
+    if (conversationId === selectedConversationId) {
+      return;
+    }
+
+    stopStreaming();
+    setSelectedConversationId(conversationId);
+  };
+
+  const isChatReady =
+    !isLoadingConversations && selectedConversationId.length > 0;
+
   return (
     <Box
       sx={{
@@ -192,7 +215,7 @@ export default function ChatPage() {
       <ConversationSidebar
         conversations={isLoadingConversations ? [] : conversations}
         selectedConversationId={selectedConversationId}
-        onSelect={setSelectedConversationId}
+        onSelect={handleSelectConversation}
         onNewConversation={() => {
           void handleNewConversation();
         }}
@@ -284,6 +307,7 @@ export default function ChatPage() {
 
             <ChatInput
               isStreaming={isStreaming}
+              disabled={!isChatReady}
               onSend={handleSendMessage}
               onStop={stopStreaming}
             />
