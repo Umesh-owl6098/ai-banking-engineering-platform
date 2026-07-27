@@ -92,7 +92,7 @@ export default function ErrorMonitoringPanel({
                       <Typography variant="body2" color="text.secondary">
                         {entry.message}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {new Date(entry.occurredAt).toLocaleString()}
                         {entry.investigationId && (
                           <>
@@ -110,6 +110,7 @@ export default function ErrorMonitoringPanel({
                       </Typography>
                     </Stack>
                   }
+                  slotProps={{ secondary: { component: "div" } }}
                 />
               </ListItem>
             ))}

@@ -182,6 +182,7 @@ export default function NotificationBell() {
                       )}
                     </Stack>
                   }
+                  slotProps={{ secondary: { component: "div" } }}
                 />
               </ListItem>
             ))}

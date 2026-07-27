@@ -2,6 +2,8 @@ package com.umeshowl.banking.knowledge;
 
 import com.umeshowl.banking.chat.OpenAiService;
 import com.umeshowl.banking.knowledge.dto.KnowledgeSearchResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class KnowledgeSearchService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(KnowledgeSearchService.class);
 
     private static final int DEFAULT_RESULT_LIMIT = 5;
     private static final int MAX_RESULT_LIMIT = 10;
@@ -44,8 +49,24 @@ public class KnowledgeSearchService {
 
         int limit = resolveLimit(requestedLimit);
 
-        List<Float> embedding =
-                openAiService.generateEmbedding(query.trim());
+        List<Float> embedding;
+
+        try {
+            embedding = openAiService.generateEmbedding(query.trim());
+        } catch (Exception exception) {
+            log.warn(
+                    "Embedding generation failed for project {}. "
+                            + "Falling back to keyword-only retrieval: {}",
+                    projectId,
+                    exception.getMessage()
+            );
+
+            return searchByKeyword(
+                    projectId,
+                    query,
+                    limit
+            );
+        }
 
         String vector =
                 convertToVector(embedding);

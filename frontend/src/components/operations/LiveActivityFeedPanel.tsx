@@ -80,6 +80,7 @@ export default function LiveActivityFeedPanel({
                     </Typography>
                   </Box>
                 }
+                slotProps={{ secondary: { component: "div" } }}
               />
             </ListItem>
           ))}

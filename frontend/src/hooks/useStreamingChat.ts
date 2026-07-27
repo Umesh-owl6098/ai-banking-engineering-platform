@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import {
+  ChatStreamError,
   getConversationMessages,
   streamChat,
 } from "../services/chatService";
@@ -125,7 +126,7 @@ export function useStreamingChat(
       abortController;
 
     try {
-      await streamChat(
+      const result = await streamChat(
         {
           conversationId,
           message: trimmedMessage,
@@ -171,23 +172,39 @@ export function useStreamingChat(
                 }),
               ),
             );
-
-            setIsStreaming(false);
           },
 
           onError: (errorMessage) => {
             setError(errorMessage);
-            setIsStreaming(false);
           },
         },
         abortController.signal,
       );
+
+      if (result.endReason === "error") {
+        setError(
+          result.errorMessage ??
+            "Streaming chat failed",
+        );
+      } else if (result.endReason === "premature_eof") {
+        setError(
+          result.errorMessage ??
+            "The assistant response ended unexpectedly.",
+        );
+      } else if (result.endReason === "aborted") {
+        setError(
+          result.errorMessage ??
+            "Response generation stopped.",
+        );
+      }
     } catch (caughtError) {
       if (
         caughtError instanceof DOMException &&
         caughtError.name === "AbortError"
       ) {
         setError("Response generation stopped.");
+      } else if (caughtError instanceof ChatStreamError) {
+        setError(caughtError.message);
       } else {
         setError(
           caughtError instanceof Error
@@ -195,10 +212,9 @@ export function useStreamingChat(
             : "Unable to send the message.",
         );
       }
-
-      setIsStreaming(false);
     } finally {
       abortControllerRef.current = null;
+      setIsStreaming(false);
     }
   }
 
