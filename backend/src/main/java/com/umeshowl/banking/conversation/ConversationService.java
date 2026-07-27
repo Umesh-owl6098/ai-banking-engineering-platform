@@ -46,6 +46,12 @@ public class ConversationService {
                         )
                 );
 
+        if (!agent.getProject().getId().equals(project.getId())) {
+            throw new IllegalArgumentException(
+                    "AI Agent does not belong to the specified project"
+            );
+        }
+
         Conversation conversation = new Conversation();
         conversation.setProject(project);
         conversation.setAgent(agent);

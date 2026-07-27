@@ -8,6 +8,7 @@ import {
   Stack,
 } from "@mui/material";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import axios from "axios";
 
 import ChatInput from "../components/ChatInput";
 import ConversationSidebar from "../components/ConversationSidebar";
@@ -17,6 +18,10 @@ import EmptyState from "../components/ui/EmptyState";
 import PageHeader from "../components/ui/PageHeader";
 import { useStreamingChat } from "../hooks/useStreamingChat";
 import {
+  getProjectAgents,
+  resolveKnowledgeChatAgentId,
+} from "../services/agentService";
+import {
   createConversation,
   deleteConversation,
   getProjectConversations,
@@ -24,10 +29,6 @@ import {
 } from "../services/conversationService";
 import { INVESTIGATION_PROJECT_ID } from "../services/investigationService";
 import type { Conversation } from "../types/conversation";
-
-const CHAT_AGENT_ID =
-  import.meta.env.VITE_AGENT_ID ??
-  "c964b4de-f07a-4b61-bb53-18144b06f1fa";
 
 function createConversationTitle(message: string): string {
   const cleanMessage = message.trim().replace(/\s+/g, " ");
@@ -39,11 +40,28 @@ function createConversationTitle(message: string): string {
   return `${cleanMessage.slice(0, 52)}...`;
 }
 
+function readErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const responseMessage = error.response?.data?.message;
+
+    if (typeof responseMessage === "string" && responseMessage.trim()) {
+      return responseMessage;
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] =
     useState("");
+  const [chatAgentId, setChatAgentId] = useState<string | null>(null);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [conversationError, setConversationError] = useState<string | null>(
     null,
@@ -58,12 +76,26 @@ export default function ChatPage() {
     clearMessages,
   } = useStreamingChat(selectedConversationId);
 
-  const createAndSelectConversation =
-    useCallback(async (): Promise<Conversation | null> => {
+  const resolveChatAgent = useCallback(async (): Promise<string> => {
+    const agents = await getProjectAgents(INVESTIGATION_PROJECT_ID);
+    const agentId = resolveKnowledgeChatAgentId(agents);
+
+    if (!agentId) {
+      throw new Error(
+        "No active knowledge chat agent is configured for this project.",
+      );
+    }
+
+    setChatAgentId(agentId);
+    return agentId;
+  }, []);
+
+  const createAndSelectConversation = useCallback(
+    async (agentId: string): Promise<Conversation | null> => {
       try {
         const newConversation = await createConversation({
           projectId: INVESTIGATION_PROJECT_ID,
-          agentId: CHAT_AGENT_ID,
+          agentId,
           title: "New Banking Conversation",
         });
 
@@ -74,11 +106,18 @@ export default function ChatPage() {
         setSelectedConversationId(newConversation.id);
 
         return newConversation;
-      } catch {
-        setConversationError("Unable to create a new conversation.");
+      } catch (createError) {
+        setConversationError(
+          readErrorMessage(
+            createError,
+            "Unable to create a new conversation.",
+          ),
+        );
         return null;
       }
-    }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,6 +129,8 @@ export default function ChatPage() {
         setIsLoadingConversations(true);
         setConversationError(null);
 
+        const agentId = await resolveChatAgent();
+
         const data = await getProjectConversations(
           INVESTIGATION_PROJECT_ID,
         );
@@ -100,12 +141,13 @@ export default function ChatPage() {
           return;
         }
 
-        await createAndSelectConversation();
+        await createAndSelectConversation(agentId);
       } catch (loadError) {
         setConversationError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Unable to load conversations.",
+          readErrorMessage(
+            loadError,
+            "Unable to load conversations.",
+          ),
         );
       } finally {
         setIsLoadingConversations(false);
@@ -113,11 +155,19 @@ export default function ChatPage() {
     };
 
     void initializeConversations();
-  }, [createAndSelectConversation]);
+  }, [createAndSelectConversation, resolveChatAgent]);
 
   const handleNewConversation = async (): Promise<void> => {
+    if (!chatAgentId) {
+      setConversationError(
+        "No knowledge chat agent is available. Refresh the page and try again.",
+      );
+      return;
+    }
+
     stopStreaming();
-    await createAndSelectConversation();
+    setConversationError(null);
+    await createAndSelectConversation(chatAgentId);
   };
 
   const handleDeleteConversation = async (
@@ -143,8 +193,8 @@ export default function ChatPage() {
 
       if (remainingConversations.length > 0) {
         setSelectedConversationId(remainingConversations[0].id);
-      } else {
-        await createAndSelectConversation();
+      } else if (chatAgentId) {
+        await createAndSelectConversation(chatAgentId);
       }
     } catch {
       window.alert("Unable to delete the conversation. Please try again.");
@@ -198,7 +248,9 @@ export default function ChatPage() {
   };
 
   const isChatReady =
-    !isLoadingConversations && selectedConversationId.length > 0;
+    !isLoadingConversations
+    && selectedConversationId.length > 0
+    && chatAgentId != null;
 
   return (
     <Box
